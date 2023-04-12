@@ -5,9 +5,11 @@ Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
 
-from app import app
+from app import app, db
 from flask import render_template, request, jsonify, send_file
 import os
+from .forms import MovieForm
+from .models import Movie
 
 
 ###
@@ -43,6 +45,25 @@ def send_text_file(file_name):
     """Send your static text file."""
     file_dot_text = file_name + '.txt'
     return app.send_static_file(file_dot_text)
+
+@app.route('/api/v1/movies', methods=['POST'])
+def movies():
+    movieform = MovieForm()
+
+    if request.method == 'POST':
+        if movieform.validate_on_submit():
+            title = movieform.title.data
+            description = movieform.description.data
+            poster = movieform.poster.data
+
+            movie = Movie(title, description, poster)
+            db.session.add(movie)
+            db.session.commit()
+
+            movie.save(os.path.join(app.config['UPLOAD_FOLDER'])) #Check
+        
+        else:
+            return form_errors(movieform)
 
 
 @app.after_request
